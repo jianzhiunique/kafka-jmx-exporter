@@ -1,121 +1,117 @@
 hostPort: 127.0.0.1:9999
 whitelistObjectNames:
-  - "kafka.server:type=BrokerTopicMetrics,name=*PerSec,topic=*"
+  # 1. 流量相关：消息速率、字节流入、字节流出
+  #- "kafka.server:type=BrokerTopicMetrics,name=*PerSec,topic=*"
+  - "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec,topic=*"
+  - "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec,topic=*"
+  - "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec,topic=*"
   - "kafka.server:type=BrokerTopicMetrics,name=#PerSec"
+  # 2. broker请求数相关：生产、消费者拉取、副本拉取
   - "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=Produce"
   - "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchConsumer"
   - "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchFollower"
-  - "kafka.network:type=RequestMetrics,name=*TimeMs,request=Produce"
-  - "kafka.network:type=RequestMetrics,name=*TimeMs,request=FetchConsumer"
-  - "kafka.network:type=RequestMetrics,name=*TimeMs,request=FetchFollower"
-  - "kafka.controller:type=KafkaController,name=*"
-  - "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs"
-  - "kafka.controller:type=ControllerStats,name=UncleanLeaderElectionsPerSec"
-  - "kafka.server:type=ReplicaManager,name=*"
-  # - "kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica"
-  # - "kafka.server:type=FetcherLagMetrics,name=ConsumerLag,clientId=*,topic=*,partition=*"
-  - "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Produce"
-  - "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Fetch"
+  # 3. 网络请求相关：网络处理器空闲、请求处理池空闲、请求队列长度、相应队列长度
   - "kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent"
   - "kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent"
   - "kafka.network:type=RequestChannel,name=RequestQueueSize"
   - "kafka.network:type=RequestChannel,name=ResponseQueueSize"
-  - "kafka.server:type=SessionExpireListener,name=*"
+  # 4. 控制器相关：活跃控制器、优先副本偏移数、Leader选举速率、不完全副本选举速率、离线分区数量
+  - "kafka.controller:type=KafkaController,name=*"
+  - "kafka.controller:type=ControllerStats,name=LeaderElectionRateAndTimeMs"
+  - "kafka.controller:type=ControllerStats,name=UncleanLeaderElectionsPerSec"
+  # 5. 副本相关：ISR变化、UR数量、分区数量、Leader数量、follower最大lag、每个follower的lag、LEO、LSO、日志段数量
+  - "kafka.server:type=ReplicaManager,name=*"
+  - "kafka.server:type=ReplicaFetcherManager,name=MaxLag,clientId=Replica"
+  #- "kafka.server:type=FetcherLagMetrics,name=ConsumerLag,clientId=*,topic=*,partition=*"
+  - "kafka.log:type=Log,name=NumLogSegments,topic=*,partition=*"
+  # 6. 日志相关：日志大小、日志刷盘
   - "kafka.log:type=Log,name=Size,topic=*,partition=*"
-  # for jvm, on openjdk 1.8
+  - "kafka.log:type=LogFlushStats,name=LogFlushRateAndTimeMs"
+  - "kafka.log:type=Log,name=LogEndOffset,topic=*,partition=*"
+  - "kafka.log:type=Log,name=LogStartOffset,topic=*,partition=*"
+  # 7. 炼狱相关：延迟生产炼狱长度、延迟消费炼狱长度
+  - "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Produce"
+  - "kafka.server:type=DelayedOperationPurgatory,name=PurgatorySize,delayedOperation=Fetch"
+  # 8. zookeeper相关
+  - "kafka.server:type=SessionExpireListener,name=*"
+  # 9. JVM、OS相关 openjdk1.8
   - "java.nio:type=BufferPool,name=*"
   - "java.lang:type=OperatingSystem"
   - "java.lang:type=GarbageCollector,name=*"
+  # 10. 请求耗时相关：总时间、请求队列时间、本地时间、远程时间、响应队列时间、请求发送时间
+  - "kafka.network:type=RequestMetrics,name=*TimeMs,request=Produce"
+  - "kafka.network:type=RequestMetrics,name=*TimeMs,request=FetchConsumer"
+  - "kafka.network:type=RequestMetrics,name=*TimeMs,request=FetchFollower"
 rules:
-  - pattern : kafka.server<type=(.+), name=(.+), topic=(.+)><>Count
-    name: kafka_server_$1_$2_Count_per_topic
-    type: COUNTER
-    labels:
-      topic: "$3"
-  - pattern : kafka.server<type=(.+), name=(.+), topic=(.+)><>OneMinuteRate
+  - pattern : kafka.server<type=(.+), name=(.+), topic=(.+)><>OneMinuteRate #1 topic流量一分钟速率
     name: kafka_server_$1_$2_OneMinuteRate_per_topic
     type: GAUGE
     labels:
       topic: "$3"
-  - pattern : kafka.server<type=(.+), name=(.+)><>Count
-    name: kafka_server_$1_$2_Count
-    type: COUNTER
-  - pattern : kafka.server<type=(.+), name=(.+)><>OneMinuteRate
+  - pattern : kafka.server<type=(.+), name=(.+)><>OneMinuteRate #1 broker流量一分钟速率
     name: kafka_server_$1_$2_OneMinuteRate
     type: GAUGE
-  - pattern : kafka.network<type=(.+), name=(.+PerSec), request=(.+)><>Count
-    name: kafka_network_$1_$2_Count
-    type: COUNTER
-    labels:
-      request: "$3"
-  - pattern : kafka.network<type=(.+), name=(.+PerSec), request=(.+)><>OneMinuteRate
+  - pattern : kafka.network<type=(.+), name=(.+PerSec), request=(.+)><>OneMinuteRate #2 请求一分钟速率
     name: kafka_network_$1_$2_OneMinuteRate
     type: GAUGE
     labels:
       request: "$3"
-  - pattern : kafka.network<type=(.+), name=(.+TimeMs), request=(.+)><>Max
-    name: kafka_network_$1_$2_Max
-    type: GAUGE
-    labels:
-      request: "$3"
-  - pattern : kafka.network<type=(.+), name=(.+TimeMs), request=(.+)><>95thPercentile
-    name: kafka_network_$1_$2_95thPercentile
-    type: GAUGE
-    labels:
-      request: "$3"
-  - pattern : kafka.controller<type=KafkaController, name=(.+)><>Value
-    name: kafka_controller_KafkaController_$1_Value
-    type: GAUGE
-  - pattern : kafka.controller<type=ControllerStats, name=(.+)><>OneMinuteRate
-    name: kafka_controller_ControllerStats_$1_OneMinuteRate
-    type: GAUGE
-  - pattern : kafka.controller<type=ControllerStats, name=(.+)><>Count
-    name: kafka_controller_ControllerStats_$1_Count
-    type: COUNTER
-  - pattern : kafka.server<type=ReplicaManager, name=(.+)><>Value
-    name: kafka_server_ReplicaManager_$1_Value
-    type: GAUGE
-  - pattern : kafka.server<type=ReplicaManager, name=(.+)><>OneMinuteRate
-    name: kafka_server_ReplicaManager_$1_OneMinuteRate
-    type: GAUGE
-  - pattern : kafka.server<type=ReplicaManager, name=(.+)><>Count
-    name: kafka_server_ReplicaManager_$1_Count
-    type: COUNTER
-      #- pattern : kafka.server<type=ReplicaFetcherManager, name=MaxLag, clientId=Replica><>Value
-      # name: kafka_server_ReplicaFetcherManager_ReplicaMaxLag_Value
-      # type: GAUGE
-      #- pattern : kafka.server<type=FetcherLagMetrics, name=ConsumerLag, clientId=(.+), topic=(.+), partition=(.+)><>Value
-      # name: kafka_server_FetcherLagMetrics_ConsumerLag_Value
-      #labels:
-      #   clientId: "$1"
-      #  topic: "$2"
-    # partition: "$3"
-    #type: GAUGE
-  - pattern : kafka.server<type=DelayedOperationPurgatory, name=PurgatorySize, delayedOperation=(.+)><>Value
-    name: kafka_server_DelayedOperationPurgatory_PurgatorySize_$1_Value
-    type: GAUGE
-  - pattern : kafka.network<type=SocketServer, name=NetworkProcessorAvgIdlePercent><>Value
+  - pattern : kafka.network<type=SocketServer, name=NetworkProcessorAvgIdlePercent><>Value #3 网络处理器空闲
     name: kafka_network_SocketServer_NetworkProcessorAvgIdlePercent_Value
     type: GAUGE
-  - pattern : kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate
+  - pattern : kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate #3 请求处理线程池空闲
     name: kafka_server_KafkaRequestHandlerPool_RequestHandlerAvgIdlePercent_OneMinuteRate
     type: GAUGE
-  - pattern : kafka.network<type=RequestChannel, name=(.+)><>Value
+  - pattern : kafka.network<type=RequestChannel, name=(.+)><>Value #3 请求队列
     name: kafka_network_RequestChannel_$1_Value
     type: GAUGE
-  - pattern : kafka.server<type=SessionExpireListener, name=ZooKeeperAuthFailuresPerSec><>OneMinuteRate
-    name: kafka_server_SessionExpireListener_$1_OneMinuteRate
+  - pattern : kafka.controller<type=KafkaController, name=(.+)><>Value #4 活跃控制器数量、是否是控制器、离线分区数、副本不平衡数
+    name: kafka_controller_KafkaController_$1_Value
     type: GAUGE
-  - pattern : kafka.server<type=SessionExpireListener, name=(.+)><>Count
-    name: kafka_server_SessionExpireListener_$1_Count
+  - pattern : kafka.controller<type=ControllerStats, name=(.+)><>OneMinuteRate #4 leader选举、不完全副本选举速率
+    name: kafka_controller_ControllerStats_$1_OneMinuteRate
+    type: GAUGE
+  - pattern : kafka.controller<type=ControllerStats, name=(.+)><>Count #4 leader选举、不完全副本选举次数
+    name: kafka_controller_ControllerStats_$1_Count
     type: COUNTER
-  - pattern : kafka.log<type=Log, name=Size, topic=(.+), partition=(.+)><>Value
-    name: kafka_log_LogSize_Value
+  - pattern : kafka.server<type=ReplicaManager, name=(.+)><>Value #5 UR数量、分区数量、Leader数量
+    name: kafka_server_ReplicaManager_$1_Value
+    type: GAUGE
+  - pattern : kafka.server<type=ReplicaManager, name=(.+)><>OneMinuteRate #5 ISR速率
+    name: kafka_server_ReplicaManager_$1_OneMinuteRate
+    type: GAUGE
+  - pattern : kafka.server<type=ReplicaManager, name=(.+)><>Count #5 ISR计数
+    name: kafka_server_ReplicaManager_$1_Count
+    type: COUNTER
+  - pattern : kafka.server<type=ReplicaFetcherManager, name=MaxLag, clientId=Replica><>Value #5 follower最大lag
+    name: kafka_server_ReplicaFetcherManager_ReplicaMaxLag_Value
+    type: GAUGE
+  #- pattern : kafka.server<type=FetcherLagMetrics, name=ConsumerLag, clientId=(.+), topic=(.+), partition=(.+)><>Value #5 每个follower的lag
+   # name: kafka_server_FetcherLagMetrics_ConsumerLag_Value
+   # labels:
+   #   clientId: "$1"
+   #   topic: "$2"
+   #   partition: "$3"
+   # type: GAUGE
+  - pattern : kafka.log<type=Log, name=(.+), topic=(.+), partition=(.+)><>Value #6 日志磁盘占用、LEO、LSO、日志段
+    name: kafka_log_$1_Value
     type: GAUGE
     labels:
-      topic: "$1"
-      partition: "$2"
-  # for jvm, on openjdk 1.8
+      topic: "$2"
+      partition: "$3"
+  - pattern: kafka.log:type=LogFlushStats,name=LogFlushRateAndTimeMs<>99thPercentile #6 日志刷盘99分位耗时
+    name: kafka_log_LogFlushTimeMs_99thPercentile
+    type: GAUGE
+  - pattern : kafka.server<type=DelayedOperationPurgatory, name=PurgatorySize, delayedOperation=(.+)><>Value #7 炼狱
+    name: kafka_server_DelayedOperationPurgatory_PurgatorySize_$1_Value
+    type: GAUGE
+  #- pattern : kafka.server<type=SessionExpireListener, name=(.+)><>OneMinuteRate #8 zookeeper会话速率
+   # name: kafka_server_SessionExpireListener_$1_OneMinuteRate
+   # type: GAUGE
+  - pattern : kafka.server<type=SessionExpireListener, name=(.+)><>Count #8 zookeeper会话计数
+    name: kafka_server_SessionExpireListener_$1_Count
+    type: COUNTER
+  #9 for jvm, on openjdk 1.8
   - pattern : java.nio<type=BufferPool, name=(.+)><>Count
     name: kafka_java_nio_BufferPool_$1_Count
     type: GAUGE
@@ -171,3 +167,13 @@ rules:
     type: GAUGE
     labels:
       name: "$1"
+  - pattern: kafka.network<type=(.+), name=(.+TimeMs), request=(.+)><>Max #10 请求最大耗时时间
+    name: kafka_network_$1_$2_Max
+    type: GAUGE
+    labels:
+      request: "$3"
+  - pattern: kafka.network<type=(.+), name=(.+TimeMs), request=(.+)><>95thPercentile #10 请求95分位耗时时间
+    name: kafka_network_$1_$2_95thPercentile
+    type: GAUGE
+    labels:
+      request: "$3"
