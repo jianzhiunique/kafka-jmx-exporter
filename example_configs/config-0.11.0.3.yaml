@@ -5,13 +5,13 @@ whitelistObjectNames:
   - "kafka.server:type=BrokerTopicMetrics,name=BytesInPerSec,topic=*"
   - "kafka.server:type=BrokerTopicMetrics,name=BytesOutPerSec,topic=*"
   - "kafka.server:type=BrokerTopicMetrics,name=MessagesInPerSec,topic=*"
-  - "kafka.server:type=BrokerTopicMetrics,name=#PerSec"
+  - "kafka.server:type=BrokerTopicMetrics,name=*PerSec"
   # 2. broker请求数相关：生产、消费者拉取、副本拉取
   - "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=Produce"
   - "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchConsumer"
   - "kafka.network:type=RequestMetrics,name=RequestsPerSec,request=FetchFollower"
   # 3. 网络请求相关：网络处理器空闲、请求处理池空闲、请求队列长度、相应队列长度
-  - "kafka.network:type=SocketServer,name=NetworkProcessorAvgIdlePercent"
+  - "kafka.network:type=SocketServer,name=*"
   - "kafka.server:type=KafkaRequestHandlerPool,name=RequestHandlerAvgIdlePercent"
   - "kafka.network:type=RequestChannel,name=RequestQueueSize"
   - "kafka.network:type=RequestChannel,name=ResponseQueueSize"
@@ -42,6 +42,8 @@ whitelistObjectNames:
   - "kafka.network:type=RequestMetrics,name=*TimeMs,request=Produce"
   - "kafka.network:type=RequestMetrics,name=*TimeMs,request=FetchConsumer"
   - "kafka.network:type=RequestMetrics,name=*TimeMs,request=FetchFollower"
+  # 11. 消费者组相关
+  - "kafka.coordinator.group:type=GroupMetadataManager,name=*"
 rules:
   - pattern : kafka.server<type=(.+), name=(.+), topic=(.+)><>OneMinuteRate #1 topic流量一分钟速率
     name: kafka_server_$1_$2_OneMinuteRate_per_topic
@@ -56,8 +58,8 @@ rules:
     type: GAUGE
     labels:
       request: "$3"
-  - pattern : kafka.network<type=SocketServer, name=NetworkProcessorAvgIdlePercent><>Value #3 网络处理器空闲
-    name: kafka_network_SocketServer_NetworkProcessorAvgIdlePercent_Value
+  - pattern : kafka.network<type=SocketServer, name=(.+)><>Value #3 网络处理器空闲
+    name: kafka_network_SocketServer_$1_Value
     type: GAUGE
   - pattern : kafka.server<type=KafkaRequestHandlerPool, name=RequestHandlerAvgIdlePercent><>OneMinuteRate #3 请求处理线程池空闲
     name: kafka_server_KafkaRequestHandlerPool_RequestHandlerAvgIdlePercent_OneMinuteRate
@@ -177,3 +179,6 @@ rules:
     type: GAUGE
     labels:
       request: "$3"
+  - pattern: kafka.coordinator.group<type=GroupMetadataManager, name=(.+)><>Value #11 消费者组相关
+    name: kafka_group_$1_Value
+    type: GAUGE
