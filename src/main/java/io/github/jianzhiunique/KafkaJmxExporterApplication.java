@@ -7,7 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class KafkaJmxExporterApplication {
 
 	public static void main(String[] args) {
-		Thread thread = new Thread(new Runnable() {
+		SpringApplication.run(KafkaJmxExporterApplication.class, args);
+		/*Thread thread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				while(true){
@@ -26,8 +27,8 @@ public class KafkaJmxExporterApplication {
 			thread.join();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		}
-		SpringApplication.run(KafkaJmxExporterApplication.class, args);
+		}*/
+
 	}
 
 }
