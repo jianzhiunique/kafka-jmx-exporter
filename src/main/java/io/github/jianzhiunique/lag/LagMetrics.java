@@ -58,7 +58,7 @@ public class LagMetrics {
                 consumer.seekToBeginning(consumer.assignment());
                 while (true) {
                     try {
-                        System.out.println("poll");
+                        //System.out.println("poll");
                         ConsumerRecords<byte[], byte[]> consumerRecords = consumer.poll(Duration.ofSeconds(5));
 
                         consumerRecords.forEach(record -> {
@@ -72,12 +72,14 @@ public class LagMetrics {
                                     byte[] value = record.value();
                                     if (value != null) {
                                         OffsetAndMetadata offsetAndMetadata = GroupMetadataManager.readOffsetMessageValue(ByteBuffer.wrap(value));
-                                        System.out.println(groupTopicPartition.group());
-                                        System.out.println(groupTopicPartition.topicPartition().topic());
-                                        System.out.println(groupTopicPartition.topicPartition().partition());
-
-                                        System.out.println(offsetAndMetadata.offset());
+//                                        System.out.println(groupTopicPartition.group());
+//                                        System.out.println(groupTopicPartition.topicPartition().topic());
+//                                        System.out.println(groupTopicPartition.topicPartition().partition());
+//                                        System.out.println(offsetAndMetadata.offset());
                                         lagMap.put(groupTopicPartition, offsetAndMetadata.offset());
+                                    }else{
+                                        //tombstone
+                                        lagMap.remove(groupTopicPartition);
                                     }
                                 }
                             }
