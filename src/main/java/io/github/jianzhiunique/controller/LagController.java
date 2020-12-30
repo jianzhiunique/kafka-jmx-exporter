@@ -10,7 +10,7 @@ public class LagController {
     String lag(){
         StringBuilder stringBuilder = new StringBuilder();
         LagMetrics.lagMap.forEach((key, value)-> {
-            stringBuilder.append(String.format("kafka_lag{topic=\"%s\",partition=\"%s\",group=\"%s\"} %d", key.topicPartition().topic(),
+            stringBuilder.append(String.format("kafka_consumer_offset{topic=\"%s\",partition=\"%s\",group=\"%s\"} %d", key.topicPartition().topic(),
                     key.topicPartition().partition(), key.group(), value));
             stringBuilder.append("\n");
         });
