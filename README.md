@@ -9,6 +9,11 @@ The aim is to avoid reloading kafka when config file changed.
 java -javaagent:jmx_prometheus_javaagent-0.13.0.jar=8070:config.yaml -jar kafka-jmx-exporter-1.0.0.jar
 ```
 
+## Grafana Dashboard
+
+Kafka-JMX.json is a dashboard for kafka server monitor
+Kafka-Topic-JMX.json is a dashboard for kafka topics monitor
+
 ## Config
 
 for more details, please refer to https://github.com/prometheus/jmx_exporter.
