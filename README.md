@@ -11,8 +11,10 @@ java -javaagent:jmx_prometheus_javaagent-0.13.0.jar=8070:config.yaml -jar kafka-
 
 ## Grafana Dashboard
 
+```
 Kafka-JMX.json is a dashboard for kafka server monitor
 Kafka-Topic-JMX.json is a dashboard for kafka topics monitor
+```
 
 ## Config
 
